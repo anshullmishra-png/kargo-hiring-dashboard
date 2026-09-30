@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="font-medium text-inkmut hover:text-ink">Candidates</Link>
             <Link href="/upload" className="font-medium text-inkmut hover:text-ink">Upload CVs</Link>
             <Link href="/rubric" className="font-medium text-inkmut hover:text-ink">Rubric</Link>
+            <Link href="/privacy" className="font-medium text-inkmut hover:text-ink">Privacy</Link>
             <span className="flex-1" />
             <LogoutButton />
           </nav>

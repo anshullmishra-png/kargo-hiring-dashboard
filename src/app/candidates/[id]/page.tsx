@@ -7,6 +7,7 @@ import type { Candidate, CandidatePii, RoleCode, ScoreRow } from '@/lib/types'
 import CandidatePanel from '@/components/CandidatePanel'
 import Shell from '@/components/Shell'
 import { Breakdown, CritBar, ScoreRing } from '@/components/viz'
+import { isInvited, lineScore, rankRole } from '@/lib/ranking'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,14 +22,15 @@ export default async function CandidatePage({ params }: { params: { id: string }
     db.from('candidate_scores').select('*').eq('candidate_id', cand.id),
     loadRubric(),
     loadSettings(),
-    db.from('candidates').select('id,score_pm,score_spm,applied_role').eq('applied_role', cand.applied_role).eq('status', 'ready'),
+    db.from('candidates').select('id,score_pm,score_spm,applied_role,status,created_at').eq('applied_role', cand.applied_role).eq('status', 'ready'),
   ])
   const pii = (piiRow ?? { name: null, email: null, phone: null }) as CandidatePii
   const scores = (scoreRows ?? []) as ScoreRow[]
   const name = pii.name || 'Unknown candidate'
 
   // Prev / next in the same ranked list the dashboard shows.
-  const order = ((siblings ?? []) as Candidate[]).sort((a, b) => (appliedScore(b) ?? 0) - (appliedScore(a) ?? 0)).map(s => s.id)
+  const ranked = rankRole((siblings ?? []) as Candidate[], cand.applied_role)
+  const order = ranked.map(s => s.id)
   const at = order.indexOf(cand.id)
   const prev = at > 0 ? order[at - 1] : null
   const next = at >= 0 && at < order.length - 1 ? order[at + 1] : null
@@ -43,7 +45,8 @@ export default async function CandidatePage({ params }: { params: { id: string }
   const other: RoleCode = cand.applied_role === 'PM' ? 'SPM' : 'PM'
   const subst = (s: string) => s.replaceAll('[CANDIDATE]', name)
   const total = appliedScore(cand)
-  const aboveLine = (total ?? 0) >= settings.threshold
+  const line = lineScore(ranked, settings)
+  const aboveLine = at >= 0 && isInvited(at, total ?? 0, settings)
 
   const table = (code: RoleCode) => (
     <ul className="space-y-4">
@@ -146,7 +149,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
             {cand.status === 'ready' && (
               <div className="space-y-4 border-b border-white/10 px-6 py-5 text-sm">
                 <div className="flex items-center gap-5">
-                  <ScoreRing value={total ?? 0} line={settings.threshold} size={112} dark label={`${cand.applied_role} rubric`} />
+                  <ScoreRing value={total ?? 0} line={line} size={112} dark label={`${cand.applied_role} rubric`} />
                   <div className="min-w-0 flex-1 space-y-3">
                     <div>
                       <div className="mb-1 flex justify-between text-xs text-sand/70">
@@ -158,15 +161,14 @@ export default async function CandidatePage({ params }: { params: { id: string }
                       </div>
                     </div>
                     <div className="flex justify-between text-xs text-sand/70">
-                      <span>The line</span>
-                      <span className="font-semibold text-sand/90">{settings.threshold}</span>
+                      <span>Rank in {cand.applied_role}</span>
+                      <span className="font-semibold text-sand/90">
+                        #{rank} of {order.length}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs text-sand/70">
-                      <span>Gap to the line</span>
-                      <span className="font-semibold text-sand/90">
-                        {aboveLine ? '+' : ''}
-                        {Math.round(((total ?? 0) - settings.threshold) * 10) / 10}
-                      </span>
+                      <span>Line (lowest invited score)</span>
+                      <span className="font-semibold text-sand/90">{line}</span>
                     </div>
                   </div>
                 </div>
@@ -174,7 +176,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
                   <p className="border-t border-white/10 pt-2 text-[13px] text-sand/70">Why {cand.applied_role}: {cand.role_note}</p>
                 )}
                 <p className={`pt-1 text-[13px] font-semibold ${aboveLine ? 'text-[#9ad4a3]' : 'text-[#e8b48f]'}`}>
-                  {aboveLine ? 'Above the line: interview invite' : 'Below the line: rejection'}
+                  {aboveLine ? `Top ${settings.topN} for this role: interview invite` : `Outside the top ${settings.topN}: rejection`}
                 </p>
               </div>
             )}
@@ -184,7 +186,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
                 <p className="text-[14.5px] leading-relaxed text-white/95">{subst(cand.brief)}</p>
               ) : (
                 <p className="text-sm text-sand/60">
-                  No brief. Briefs are written for the top {settings.topN} per role above the line, or use “Write brief” below.
+                  No brief. Briefs are written for the top {settings.topN} per role, or use “Write brief” below.
                 </p>
               )}
             </div>

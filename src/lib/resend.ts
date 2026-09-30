@@ -13,6 +13,18 @@ export async function sendViaResend(opts: {
   const key = process.env.RESEND_API_KEY
   if (!key) throw new Error('RESEND_API_KEY is not set')
   const test = process.env.TEST_RECIPIENT?.trim()
+
+  // Safety: this is a case-study system, so only allow sending to approved test domains (default: the MESA test addresses).
+  // Nothing can reach a real external address unless the allowlist is deliberately changed.
+  const allowed = (process.env.ALLOWED_RECIPIENT_DOMAINS ?? 'pg27.mesaschool.co')
+    .split(',')
+    .map(d => d.trim().toLowerCase())
+    .filter(Boolean)
+  const target = (test || opts.to).toLowerCase()
+  const domain = target.split('@')[1] ?? ''
+  if (allowed.length && !allowed.includes(domain)) {
+    throw new Error(`Blocked: ${target} is not on an approved test domain (${allowed.join(', ')}). Nothing was sent.`)
+  }
   const to = test || opts.to
   const subject = test ? `[TEST for ${opts.to}] ${opts.subject}` : opts.subject
 
@@ -32,6 +44,12 @@ export async function sendViaResend(opts: {
     }),
   })
   const j = await res.json().catch(() => ({}))
-  if (!res.ok || !j.id) throw new Error(`Resend ${res.status}: ${j?.message || JSON.stringify(j).slice(0, 200)}`)
+  if (!res.ok || !j.id) {
+    const msg: string = j?.message || JSON.stringify(j).slice(0, 200)
+    const hint = /own email|verify a domain|testing emails/i.test(msg)
+      ? ' (Resend is in test mode: verify a sending domain in Resend, or set TEST_RECIPIENT to your own Resend account email.)'
+      : ''
+    throw new Error(`Resend ${res.status}: ${msg}${hint}`)
+  }
   return { id: j.id as string, to }
 }

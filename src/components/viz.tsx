@@ -179,3 +179,19 @@ export function Breakdown({ items }: { items: { name: string; weight: number; sc
     </div>
   )
 }
+
+/** Compact per-criterion strip for table rows: one segment per criterion (width = weight, fill = score). */
+export function MiniBreakdown({ items }: { items: { name: string; weight: number; score: number }[] }) {
+  return (
+    <div className="flex gap-0.5" title={items.map(i => `${i.name}: ${i.score}/10`).join('  ·  ')}>
+      {items.map(i => (
+        <div key={i.name} style={{ width: `${i.weight}%` }}>
+          <div className="h-2 overflow-hidden rounded-sm bg-sanddk">
+            <div className="h-full" style={{ width: `${i.score * 10}%`, background: scoreColor10(i.score) }} />
+          </div>
+          <p className="mt-0.5 text-center text-[10px] font-semibold tabular-nums text-inkmut">{i.score}</p>
+        </div>
+      ))}
+    </div>
+  )
+}

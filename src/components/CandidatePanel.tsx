@@ -169,7 +169,7 @@ export default function CandidatePanel({ id, status, role, details, email, hasBr
             {!locked && (
               <div className="flex flex-wrap items-center gap-2">
                 <button className="btn btn-primary !px-5 !py-3 !text-[15px]" onClick={send} disabled={!!busy}>
-                  {busy === 'send' ? 'Sending...' : 'Send via Resend'}
+                  {busy === 'send' ? 'Sending...' : 'Confirm & send via Resend'}
                 </button>
                 <button className="btn" onClick={saveDraft} disabled={!!busy || !dirty}>
                   Save edits

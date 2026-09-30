@@ -7,11 +7,11 @@ Internal tool for one person. Upload a CV, pick the role → it is scored agains
 1. **Upload** (`/upload`): PDF / DOCX / TXT + the role applied for. Several files at once is fine (one role per batch).
 2. **Personal details are split off first, in plain code (no AI).** Name, email, phone and profile links go to the private `candidate_pii` table. The rest of the CV (`candidates.cv_text`) is what the AI sees. If anything personal survives redaction, the upload is rejected and nothing is sent to AI.
 3. **Score** — every CV is scored 0–10 per criterion against **both** the PM and SPM rubric (one-line reason each). Weighted to 0–100 using the weights in the database.
-4. **Email draft** — invite if the applied-role score ≥ *the line* (default 60), otherwise a warm rejection. Written from the redacted CV with `{{FIRST_NAME}}` placeholders; the real name is substituted in code afterwards.
+4. **Email draft** — an interview invite for the **top N per role** (default 5, ranked on the applied-role score, and at least the minimum score), a warm rejection for everyone else. Written from the redacted CV with `{{FIRST_NAME}}` placeholders; the real name is substituted in code afterwards.
 5. **Brief** — three sentences for the top N per role (default 5) that are above the line.
 6. **Dashboard** (`/`) ranks each role by score, shows briefs, and links to each candidate → edit the draft → **Send via Resend**.
 
-The line and N are editable on the dashboard; changing them redrafts any email whose invite/reject kind flips. Sent emails are never touched.
+N and the minimum score are editable on the dashboard; as new CVs arrive or N changes, unsent drafts flip between invite and rejection automatically. Sent emails are never touched.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Rubric and JDs live in `data/`. After editing `data/rubric.txt`, run `npm run db
 
 ## Testing safely
 
-Set `TEST_RECIPIENT=you@example.com` — every email is then redirected to you, with the real recipient shown in the subject. Unset it to send for real. With Resend's default `onboarding@resend.dev` sender you can only deliver to your own Resend account email; verify a domain to send to candidates.
+Emails go to the address stored for each candidate, but only if its domain is in `ALLOWED_RECIPIENT_DOMAINS` (default `pg27.mesaschool.co`, the MESA test addresses); anything else is blocked before Resend is called. Optionally set `TEST_RECIPIENT` to redirect every email to one address (it must also be on an allowed domain). With Resend's default `onboarding@resend.dev` sender you can only deliver to your own Resend account email; verify a domain to send to other addresses.
 
 `npm run test:pii -- "<folder of CVs>"` runs the personal-details separation over a folder and reports what it found.
 

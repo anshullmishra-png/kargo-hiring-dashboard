@@ -13,6 +13,7 @@ export interface Settings {
   threshold: number
   topN: number
   scoringNotes: string
+  patterns: string
 }
 
 export interface Candidate {

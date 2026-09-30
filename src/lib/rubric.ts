@@ -16,9 +16,10 @@ export async function loadSettings(): Promise<Settings> {
   const rows = must(await getDb().from('settings').select('*'), 'load settings') as { key: string; value: string }[]
   const m = Object.fromEntries(rows.map(r => [r.key, r.value]))
   return {
-    threshold: Number(m.threshold ?? 60),
+    threshold: Number(m.threshold ?? 1),
     topN: Number(m.top_n ?? 5),
     scoringNotes: m.scoring_notes ?? '',
+    patterns: m.patterns ?? '',
   }
 }
 

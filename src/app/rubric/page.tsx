@@ -15,6 +15,15 @@ export default async function RubricPage() {
       pill="Loaded from rubric.txt"
     >
     <div className="space-y-6">
+      {settings.patterns && (
+        <section className="card">
+          <h2 className="mb-1 text-lg font-bold tracking-tight">Where this rubric came from</h2>
+          <p className="mb-3 text-sm text-inkmut">
+            Patterns found by comparing the 8 past hires rated Exceeds against those rated Meets or Below. Each criterion below traces back to one of them.
+          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">{settings.patterns}</p>
+        </section>
+      )}
       {(['PM', 'SPM'] as RoleCode[]).map(code => (
         <section key={code} className="card">
           <h2 className="mb-4 text-lg font-bold tracking-tight">

@@ -82,7 +82,9 @@ export async function llmJson<T>(system: string, user: string, validate: (raw: u
       return validate(parseJson(text))
     } catch (e) {
       lastErr = e
-      await new Promise(r => setTimeout(r, 1500 * (attempt + 1))) // brief backoff between tries
+      // Rate-limited (429): wait longer so the per-minute quota can refill. Otherwise a brief backoff.
+      const limited = /429/.test(String((e as Error).message))
+      await new Promise(r => setTimeout(r, limited ? 8000 * (attempt + 1) : 1500 * (attempt + 1)))
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))

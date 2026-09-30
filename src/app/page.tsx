@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { getDb, must } from '@/lib/db'
-import { loadSettings } from '@/lib/rubric'
+import { loadRubric, loadSettings } from '@/lib/rubric'
 import SettingsBar from '@/components/SettingsBar'
 import Shell from '@/components/Shell'
-import { GOOD, Kpi, ScoreBar, Spread } from '@/components/viz'
+import { GOOD, Kpi, MiniBreakdown, ScoreBar, Spread } from '@/components/viz'
 import DuplicatesPanel from '@/components/DuplicatesPanel'
 import { findDuplicateGroups } from '@/lib/dupes'
+import { inviteIds, lineScore, rankRole } from '@/lib/ranking'
 import { appliedScore, roleTitle } from '@/lib/types'
-import type { Candidate, CandidatePii, RoleCode } from '@/lib/types'
+import type { Candidate, CandidatePii, RoleCode, ScoreRow } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,14 +16,17 @@ const otherScore = (c: Candidate) => (c.applied_role === 'PM' ? c.score_spm : c.
 
 export default async function Dashboard() {
   const db = getDb()
-  const [settings, cands, pii] = await Promise.all([
+  const [settings, rubric, cands, pii, scoreRows] = await Promise.all([
     loadSettings(),
+    loadRubric(),
     db.from('candidates').select('*').then(r => must(r, 'load candidates') as Candidate[]),
     db.from('candidate_pii').select('candidate_id,name,email').then(r => must(r, 'load names') as Pick<CandidatePii, 'candidate_id' | 'name' | 'email'>[]),
+    db.from('candidate_scores').select('candidate_id,criterion_id,score').then(r => must(r, 'load scores') as Pick<ScoreRow, 'candidate_id' | 'criterion_id' | 'score'>[]),
   ])
   const names = new Map(pii.map(p => [p.candidate_id, p.name]))
   const emails = new Map(pii.map(p => [p.candidate_id, p.email]))
   const byId = new Map(cands.map(c => [c.id, c]))
+  const scoreOf = new Map(scoreRows.map(s => [`${s.candidate_id}:${s.criterion_id}`, s.score]))
   const dupeGroups = findDuplicateGroups(cands.map(c => ({ id: c.id, cv_text: c.cv_text, name: names.get(c.id) ?? null, email: emails.get(c.id) ?? null })))
   const dupeIds = new Set(dupeGroups.flatMap(g => g.ids))
   const dupeViews = dupeGroups.map(g => ({
@@ -44,7 +48,7 @@ export default async function Dashboard() {
   const attention = cands.filter(c => c.status !== 'ready')
   const toSend = ready.filter(c => c.email_status === 'draft' && c.email_body).length
   const sent = ready.filter(c => c.email_status === 'sent').length
-  const above = ready.filter(c => (appliedScore(c) ?? 0) >= settings.threshold).length
+  const invited = inviteIds(ready, settings)
 
   return (
     <Shell
@@ -66,7 +70,7 @@ export default async function Dashboard() {
       {ready.length > 0 && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi label="Scored" value={ready.length} of={cands.length} hint={attention.length ? `${attention.length} need attention` : 'all processed'} />
-          <Kpi label="Above the line" value={above} of={ready.length} accent={GOOD} hint={`score ${settings.threshold}+ gets an invite`} />
+          <Kpi label="Invited" value={invited.size} of={ready.length} accent={GOOD} hint={`top ${settings.topN} per role get an invite + brief`} />
           <Kpi label="Emails waiting" value={toSend} of={ready.length} hint="drafted, needs your click" />
           <Kpi label="Sent" value={sent} of={ready.length} accent={GOOD} hint="nothing sends on its own" />
         </div>
@@ -79,18 +83,17 @@ export default async function Dashboard() {
       )}
 
       {(['PM', 'SPM'] as RoleCode[]).map(role => {
-        const list = ready
-          .filter(c => c.applied_role === role)
-          .sort((a, b) => (appliedScore(b) ?? 0) - (appliedScore(a) ?? 0))
+        const list = rankRole(ready, role)
         if (!list.length) return null
-        const firstBelow = list.findIndex(c => (appliedScore(c) ?? 0) < settings.threshold)
+        const line = lineScore(list, settings)
+        const firstOut = list.findIndex(c => !invited.has(c.id))
         return (
           <section key={role}>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-4">
               <h2 className="text-lg font-bold tracking-tight">
                 {roleTitle(role)} <span className="text-sm font-normal text-inkmut">· {list.length} ranked on the {role} rubric</span>
               </h2>
-              <Spread scores={list.map(c => appliedScore(c) ?? 0)} line={settings.threshold} />
+              <Spread scores={list.map(c => appliedScore(c) ?? 0)} line={line} />
             </div>
             <div className="card overflow-x-auto !p-0">
               <table className="w-full text-left text-sm">
@@ -98,9 +101,10 @@ export default async function Dashboard() {
                   <tr>
                     <th className="w-10 px-3 py-2">#</th>
                     <th className="px-3 py-2">Candidate</th>
-                    <th className="w-56 px-3 py-2">{role} score</th>
-                    <th className="w-40 px-3 py-2">{role === 'PM' ? 'SPM' : 'PM'} score</th>
-                    <th className="w-40 px-3 py-2">Email</th>
+                    <th className="w-52 px-3 py-2">{role} score</th>
+                    <th className="w-44 px-3 py-2">Breakdown (per criterion)</th>
+                    <th className="w-36 px-3 py-2">{role === 'PM' ? 'SPM' : 'PM'} score</th>
+                    <th className="w-36 px-3 py-2">Email</th>
                     <th className="w-16 px-3 py-2"></th>
                   </tr>
                 </thead>
@@ -109,7 +113,7 @@ export default async function Dashboard() {
                     const s = appliedScore(c) ?? 0
                     const name = names.get(c.id) || 'Unknown'
                     return (
-                      <RowGroup key={c.id} showLine={i === firstBelow} threshold={settings.threshold}>
+                      <RowGroup key={c.id} showLine={i === firstOut} topN={settings.topN}>
                         <tr className="border-t border-line/60 align-top hover:bg-sand/50">
                           <td className="px-3 py-2 text-inkmut">{i + 1}</td>
                           <td className="px-3 py-2">
@@ -129,10 +133,15 @@ export default async function Dashboard() {
                             {c.brief && <p className="mt-1 max-w-3xl text-inkmut">{c.brief.replaceAll('[CANDIDATE]', name)}</p>}
                           </td>
                           <td className="px-3 py-3">
-                            <ScoreBar value={s} line={settings.threshold} />
+                            <ScoreBar value={s} line={line} />
                           </td>
                           <td className="px-3 py-3">
-                            <ScoreBar value={otherScore(c) ?? 0} line={settings.threshold} muted />
+                            <MiniBreakdown
+                              items={rubric[role].map(k => ({ name: k.name, weight: k.weight, score: scoreOf.get(`${c.id}:${k.id}`) ?? 0 }))}
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <ScoreBar value={otherScore(c) ?? 0} line={line} muted />
                           </td>
                           <td className="px-3 py-2">
                             <EmailBadge c={c} />
@@ -149,6 +158,9 @@ export default async function Dashboard() {
                 </tbody>
               </table>
             </div>
+            <p className="mt-2 text-xs text-inkmut">
+              Breakdown order: {rubric[role].map(k => `${k.name} (${k.weight}%)`).join(' · ')}
+            </p>
           </section>
         )
       })}
@@ -174,13 +186,13 @@ export default async function Dashboard() {
   )
 }
 
-function RowGroup({ showLine, threshold, children }: { showLine: boolean; threshold: number; children: React.ReactNode }) {
+function RowGroup({ showLine, topN, children }: { showLine: boolean; topN: number; children: React.ReactNode }) {
   return (
     <>
       {showLine && (
         <tr className="bg-terra/10">
-          <td colSpan={6} className="px-3 py-1 text-center text-xs font-medium text-terradk">
-            — the line ({threshold}): below this get a rejection draft —
+          <td colSpan={7} className="px-3 py-1 text-center text-xs font-medium text-terradk">
+            — the line: the top {topN} above get an interview invite, everyone below gets a rejection draft —
           </td>
         </tr>
       )}

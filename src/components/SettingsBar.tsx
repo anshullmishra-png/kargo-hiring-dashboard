@@ -26,12 +26,12 @@ export default function SettingsBar({ threshold, topN }: { threshold: number; to
   return (
     <div className="card flex flex-wrap items-end gap-4 text-sm">
       <label>
-        <span className="lbl">The line (min score for an invite)</span>
-        <input className="input w-24" type="number" min={0} max={100} value={t} onChange={e => setT(e.target.value)} />
+        <span className="lbl">Invite the top N per role (each gets a brief)</span>
+        <input className="input w-24" type="number" min={0} max={50} value={n} onChange={e => setN(e.target.value)} />
       </label>
       <label>
-        <span className="lbl">Briefs for top N per role</span>
-        <input className="input w-24" type="number" min={0} max={50} value={n} onChange={e => setN(e.target.value)} />
+        <span className="lbl">Minimum score to be invited</span>
+        <input className="input w-24" type="number" min={0} max={100} value={t} onChange={e => setT(e.target.value)} />
       </label>
       <button
         className="btn"

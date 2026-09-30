@@ -5,6 +5,7 @@ import { getDb, must } from './db'
 import { llmJson } from './llm'
 import { firstNameOf } from './pii'
 import { loadRubric, loadSettings, weightedTotal } from './rubric'
+import { inviteIds } from './ranking'
 import { appliedScore, roleTitle } from './types'
 import type { Candidate, CandidatePii, Criterion, RoleCode, ScoreRow } from './types'
 
@@ -155,8 +156,8 @@ export async function draftEmail(id: string): Promise<void> {
   const cand = await getCandidate(id)
   if (cand.email_status === 'sent') return
   const [pii, settings] = await Promise.all([getPii(id), loadSettings()])
-  const total = appliedScore(cand) ?? 0
-  const kind: 'invite' | 'reject' = total >= settings.threshold ? 'invite' : 'reject'
+  const everyone = must(await getDb().from('candidates').select('*').eq('status', 'ready'), 'load candidates') as Candidate[]
+  const kind: 'invite' | 'reject' = inviteIds(everyone, settings).has(id) ? 'invite' : 'reject'
   const lines = await scoreLines(id, cand.applied_role)
   const strongest = [...lines].sort((a, b) => b.score - a.score).slice(0, 2)
   const { data: role } = await getDb().from('roles').select('jd_text').eq('code', cand.applied_role).single()
@@ -223,34 +224,24 @@ async function mapLimit<T>(items: T[], limit: number, fn: (x: T) => Promise<void
   return errors
 }
 
-// Re-ranks each role, writes briefs for the top N above the line, and (re)drafts any email that is
-// missing or whose invite/reject kind no longer matches the current line. Sent emails are never touched.
+// Re-ranks each role, writes briefs for the invited top N, and (re)drafts any email that is
+// missing or whose invite/reject kind no longer matches the current ranking. Sent emails are never touched.
 export async function reconcile(): Promise<{ briefs: number; emails: number; errors: string[] }> {
   const settings = await loadSettings()
   const all = must(await getDb().from('candidates').select('*').eq('status', 'ready'), 'load candidates') as Candidate[]
 
-  const needBrief: string[] = []
-  for (const role of ['PM', 'SPM'] as RoleCode[]) {
-    const ranked = all
-      .filter(c => c.applied_role === role)
-      .sort((a, b) => (appliedScore(b) ?? 0) - (appliedScore(a) ?? 0))
-    ranked
-      .slice(0, settings.topN)
-      .filter(c => (appliedScore(c) ?? 0) >= settings.threshold && !c.brief)
-      .forEach(c => needBrief.push(c.id))
-  }
+  // Top N per role (by score) get an invite and a brief; everyone else gets a rejection draft.
+  const invited = inviteIds(all, settings)
+  const needBrief = all.filter(c => invited.has(c.id) && !c.brief).map(c => c.id)
 
   const needEmail = all
     .filter(c => c.email_status === 'draft')
-    .filter(c => {
-      const kind = (appliedScore(c) ?? 0) >= settings.threshold ? 'invite' : 'reject'
-      return !c.email_body || c.email_kind !== kind
-    })
+    .filter(c => !c.email_body || c.email_kind !== (invited.has(c.id) ? 'invite' : 'reject'))
     .map(c => c.id)
 
   const errors = [
-    ...(await mapLimit(needEmail, 4, draftEmail)),
-    ...(await mapLimit(needBrief, 4, draftBrief)),
+    ...(await mapLimit(needEmail, 2, draftEmail)),
+    ...(await mapLimit(needBrief, 2, draftBrief)),
   ]
   return { briefs: needBrief.length, emails: needEmail.length, errors }
 }
