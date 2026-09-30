@@ -16,7 +16,7 @@ body {
   .input:focus { outline: none; border-color: #c4633f; box-shadow: 0 0 0 4px rgba(196, 99, 63, 0.14); }
   .lbl { @apply mb-1 block text-[0.78rem] font-semibold text-[#5a5040]; }
   .card { @apply rounded-2xl border border-sanddk bg-sandlt p-6 shadow-soft; }
-  .badge { @apply inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .badge { @apply inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold; }
   .eyebrow { @apply text-xs font-bold uppercase tracking-[0.22em] text-terradk; }
   .step { @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-terra/10 text-sm font-bold text-terra; }
   .grain { background-image: radial-gradient(rgba(43, 37, 29, 0.025) 1px, transparent 1px), linear-gradient(to bottom, #f6f1e7, #efe7d8); background-size: 4px 4px, 100% 100%; }
