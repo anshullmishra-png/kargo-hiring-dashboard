@@ -3,6 +3,7 @@ import { getDb, must } from '@/lib/db'
 import { loadSettings } from '@/lib/rubric'
 import SettingsBar from '@/components/SettingsBar'
 import Shell from '@/components/Shell'
+import { GOOD, Kpi, ScoreBar, Spread } from '@/components/viz'
 import { appliedScore, roleTitle } from '@/lib/types'
 import type { Candidate, CandidatePii, RoleCode } from '@/lib/types'
 
@@ -22,6 +23,7 @@ export default async function Dashboard() {
   const attention = cands.filter(c => c.status !== 'ready')
   const toSend = ready.filter(c => c.email_status === 'draft' && c.email_body).length
   const sent = ready.filter(c => c.email_status === 'sent').length
+  const above = ready.filter(c => (appliedScore(c) ?? 0) >= settings.threshold).length
 
   return (
     <Shell
@@ -38,6 +40,15 @@ export default async function Dashboard() {
 
       <SettingsBar threshold={settings.threshold} topN={settings.topN} />
 
+      {ready.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Kpi label="Scored" value={ready.length} of={cands.length} hint={attention.length ? `${attention.length} need attention` : 'all processed'} />
+          <Kpi label="Above the line" value={above} of={ready.length} accent={GOOD} hint={`score ${settings.threshold}+ gets an invite`} />
+          <Kpi label="Emails waiting" value={toSend} of={ready.length} hint="drafted, needs your click" />
+          <Kpi label="Sent" value={sent} of={ready.length} accent={GOOD} hint="nothing sends on its own" />
+        </div>
+      )}
+
       {cands.length === 0 && (
         <div className="card text-sm text-inkmut">
           No candidates yet. <Link className="text-terradk underline" href="/upload">Upload CVs</Link> to get started.
@@ -52,17 +63,20 @@ export default async function Dashboard() {
         const firstBelow = list.findIndex(c => (appliedScore(c) ?? 0) < settings.threshold)
         return (
           <section key={role}>
-            <h2 className="mb-3 text-lg font-bold tracking-tight">
-              {roleTitle(role)} <span className="text-sm font-normal text-inkmut">· ranked on the {role} rubric</span>
-            </h2>
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-4">
+              <h2 className="text-lg font-bold tracking-tight">
+                {roleTitle(role)} <span className="text-sm font-normal text-inkmut">· {list.length} ranked on the {role} rubric</span>
+              </h2>
+              <Spread scores={list.map(c => appliedScore(c) ?? 0)} line={settings.threshold} />
+            </div>
             <div className="card overflow-x-auto !p-0">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-sanddk/40 text-xs uppercase tracking-wider text-inkmut">
                   <tr>
                     <th className="w-10 px-3 py-2">#</th>
                     <th className="px-3 py-2">Candidate</th>
-                    <th className="w-24 px-3 py-2">{role} score</th>
-                    <th className="w-24 px-3 py-2">{role === 'PM' ? 'SPM' : 'PM'} score</th>
+                    <th className="w-56 px-3 py-2">{role} score</th>
+                    <th className="w-40 px-3 py-2">{role === 'PM' ? 'SPM' : 'PM'} score</th>
                     <th className="w-40 px-3 py-2">Email</th>
                     <th className="w-16 px-3 py-2"></th>
                   </tr>
@@ -86,10 +100,12 @@ export default async function Dashboard() {
                             )}
                             {c.brief && <p className="mt-1 max-w-3xl text-inkmut">{c.brief.replaceAll('[CANDIDATE]', name)}</p>}
                           </td>
-                          <td className="px-3 py-2 font-semibold">
-                            <span className={s >= settings.threshold ? 'text-green-700' : 'text-inkmut'}>{s}</span>
+                          <td className="px-3 py-3">
+                            <ScoreBar value={s} line={settings.threshold} />
                           </td>
-                          <td className="px-3 py-2 text-inkmut">{otherScore(c) ?? '—'}</td>
+                          <td className="px-3 py-3">
+                            <ScoreBar value={otherScore(c) ?? 0} line={settings.threshold} muted />
+                          </td>
                           <td className="px-3 py-2">
                             <EmailBadge c={c} />
                           </td>

@@ -6,6 +6,7 @@ import { appliedScore, roleTitle } from '@/lib/types'
 import type { Candidate, CandidatePii, RoleCode, ScoreRow } from '@/lib/types'
 import CandidatePanel from '@/components/CandidatePanel'
 import Shell from '@/components/Shell'
+import { Breakdown, CritBar, ScoreRing } from '@/components/viz'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,29 +46,21 @@ export default async function CandidatePage({ params }: { params: { id: string }
   const aboveLine = (total ?? 0) >= settings.threshold
 
   const table = (code: RoleCode) => (
-    <table className="w-full text-left text-sm">
-      <thead className="border-b border-line text-xs uppercase tracking-wider text-inkmut">
-        <tr>
-          <th className="py-2 pr-3">Criterion</th>
-          <th className="w-14 py-2 pr-3">Weight</th>
-          <th className="w-14 py-2 pr-3">Score</th>
-          <th className="py-2">Why</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rubric[code].map(c => {
-          const s = scores.find(x => x.criterion_id === c.id)
-          return (
-            <tr key={c.id} className="border-t border-line/60 align-top">
-              <td className="py-2 pr-3 font-semibold">{c.name}</td>
-              <td className="py-2 pr-3 text-inkmut">{c.weight}%</td>
-              <td className="py-2 pr-3 font-bold">{s ? `${s.score}/10` : '—'}</td>
-              <td className="py-2 text-ink/80">{s ? subst(s.reason) : ''}</td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
+    <ul className="space-y-4">
+      {rubric[code].map(c => {
+        const s = scores.find(x => x.criterion_id === c.id)
+        return (
+          <li key={c.id}>
+            <div className="mb-1.5 flex items-baseline justify-between gap-3">
+              <span className="font-semibold">{c.name}</span>
+              <span className="rounded-full bg-sanddk px-2 py-0.5 text-[11px] font-semibold text-inkmut">weight {c.weight}%</span>
+            </div>
+            {s ? <CritBar score={s.score} weight={c.weight} /> : <p className="text-sm text-inkmut">Not scored</p>}
+            {s && <p className="mt-1.5 text-[13.5px] leading-snug text-ink/75">{subst(s.reason)}</p>}
+          </li>
+        )
+      })}
+    </ul>
   )
 
   return (
@@ -94,6 +87,16 @@ export default async function CandidatePage({ params }: { params: { id: string }
                 <h2 className="mb-3 text-lg font-bold tracking-tight">
                   {roleTitle(cand.applied_role)} rubric <span className="text-sm font-normal text-inkmut">· what they applied for</span>
                 </h2>
+                <div className="mb-5 rounded-xl border border-sanddk bg-white/60 p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-inkmut">Where the {total} points came from</p>
+                  <Breakdown
+                    items={rubric[cand.applied_role].map(c => ({
+                      name: c.name,
+                      weight: c.weight,
+                      score: scores.find(x => x.criterion_id === c.id)?.score ?? 0,
+                    }))}
+                  />
+                </div>
                 {table(cand.applied_role)}
               </div>
               <div>
@@ -141,21 +144,31 @@ export default async function CandidatePage({ params }: { params: { id: string }
               )}
             </div>
             {cand.status === 'ready' && (
-              <div className="space-y-2 border-b border-white/10 px-6 py-5 text-sm">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sand/70">{cand.applied_role} rubric</span>
-                  <span className="text-[22px] font-extrabold text-white">
-                    {total}
-                    <span className="text-sm font-medium text-sand/60">/100</span>
-                  </span>
-                </div>
-                <div className="flex justify-between text-sand/70">
-                  <span>{other} rubric</span>
-                  <span className="text-sand/90">{other === 'PM' ? cand.score_pm : cand.score_spm}/100</span>
-                </div>
-                <div className="flex justify-between text-sand/70">
-                  <span>The line</span>
-                  <span className="text-sand/90">{settings.threshold}</span>
+              <div className="space-y-4 border-b border-white/10 px-6 py-5 text-sm">
+                <div className="flex items-center gap-5">
+                  <ScoreRing value={total ?? 0} line={settings.threshold} size={112} dark label={`${cand.applied_role} rubric`} />
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div>
+                      <div className="mb-1 flex justify-between text-xs text-sand/70">
+                        <span>{other} rubric</span>
+                        <span className="font-semibold text-sand/90">{other === 'PM' ? cand.score_pm : cand.score_spm}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10">
+                        <div className="h-full rounded-full bg-sand/60" style={{ width: `${Number((other === 'PM' ? cand.score_pm : cand.score_spm) ?? 0)}%` }} />
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-sand/70">
+                      <span>The line</span>
+                      <span className="font-semibold text-sand/90">{settings.threshold}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-sand/70">
+                      <span>Gap to the line</span>
+                      <span className="font-semibold text-sand/90">
+                        {aboveLine ? '+' : ''}
+                        {Math.round(((total ?? 0) - settings.threshold) * 10) / 10}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 {cand.role_auto && cand.role_note && (
                   <p className="border-t border-white/10 pt-2 text-[13px] text-sand/70">Why {cand.applied_role}: {cand.role_note}</p>
