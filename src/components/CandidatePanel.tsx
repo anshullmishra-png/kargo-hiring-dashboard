@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { fmtDateTime } from '@/lib/format'
 
 interface Props {
   id: string
@@ -145,7 +146,7 @@ export default function CandidatePanel({ id, status, role, details, email, hasBr
           </h2>
           {sent && (
             <span className="badge bg-sanddk text-ink/80">
-              Sent {email.sentAt ? new Date(email.sentAt).toLocaleString() : ''} to {email.sentTo}
+              Sent {email.sentAt ? fmtDateTime(email.sentAt) : ''} to {email.sentTo}
             </span>
           )}
         </div>

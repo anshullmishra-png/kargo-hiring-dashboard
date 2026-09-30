@@ -4,6 +4,7 @@ import { getDb, must } from '@/lib/db'
 import { extractCvText } from '@/lib/extract'
 import { assertClean, separatePii } from '@/lib/pii'
 import { processCandidate } from '@/lib/pipeline'
+import { normHash } from '@/lib/dupes'
 
 export const maxDuration = 60
 
@@ -25,6 +26,13 @@ export async function POST(req: NextRequest) {
     assertClean(redacted, pii)
 
     const db = getDb()
+
+    // Exact repeat of a CV already in the system? Skip it: no second scoring run, and point to the existing record.
+    const hash = normHash(redacted)
+    const existing = must(await db.from('candidates').select('id,cv_text'), 'check duplicates') as { id: string; cv_text: string }[]
+    const dupe = existing.find(e => normHash(e.cv_text) === hash)
+    if (dupe) return NextResponse.json({ id: dupe.id, name: pii.name, status: 'duplicate' })
+
     const id = randomUUID()
     const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, '_')
     const cvPath = `${id}/${safeName}`

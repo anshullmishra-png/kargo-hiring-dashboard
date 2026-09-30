@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 
-type Row = { name: string; state: 'waiting' | 'working' | 'done' | 'error'; msg?: string; id?: string }
+type Row = { name: string; state: 'waiting' | 'working' | 'done' | 'skipped' | 'error'; msg?: string; id?: string }
 
 export default function UploadForm() {
   const [role, setRole] = useState<'PM' | 'SPM' | 'AUTO'>('PM')
@@ -28,6 +28,7 @@ export default function UploadForm() {
         const j = await res.json().catch(() => ({ error: `Server error (${res.status})` }))
         if (!res.ok) patch(i, { state: 'error', msg: j.error })
         else if (j.status === 'error') patch(i, { state: 'error', msg: j.error, id: j.id })
+        else if (j.status === 'duplicate') patch(i, { state: 'skipped', msg: `Already uploaded${j.name ? ` (${j.name})` : ''}, skipped`, id: j.id })
         else patch(i, { state: 'done', msg: j.name ?? undefined, id: j.id })
       } catch (e) {
         patch(i, { state: 'error', msg: (e as Error).message })
@@ -69,7 +70,7 @@ export default function UploadForm() {
         <ul className="card divide-y divide-line/60 p-0 text-sm">
           {rows.map((r, i) => (
             <li key={i} className="flex items-center gap-3 px-4 py-2">
-              <span className="w-5">{r.state === 'done' ? '✓' : r.state === 'error' ? '✗' : r.state === 'working' ? '…' : '·'}</span>
+              <span className="w-5">{r.state === 'done' ? '✓' : r.state === 'skipped' ? '=' : r.state === 'error' ? '✗' : r.state === 'working' ? '…' : '·'}</span>
               <span className="flex-1 truncate">{r.name}</span>
               <span className={r.state === 'error' ? 'text-red-600' : 'text-inkmut'}>{r.msg}</span>
               {r.id && (

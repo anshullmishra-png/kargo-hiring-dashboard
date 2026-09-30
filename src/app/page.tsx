@@ -4,6 +4,8 @@ import { loadSettings } from '@/lib/rubric'
 import SettingsBar from '@/components/SettingsBar'
 import Shell from '@/components/Shell'
 import { GOOD, Kpi, ScoreBar, Spread } from '@/components/viz'
+import DuplicatesPanel from '@/components/DuplicatesPanel'
+import { findDuplicateGroups } from '@/lib/dupes'
 import { appliedScore, roleTitle } from '@/lib/types'
 import type { Candidate, CandidatePii, RoleCode } from '@/lib/types'
 
@@ -16,9 +18,28 @@ export default async function Dashboard() {
   const [settings, cands, pii] = await Promise.all([
     loadSettings(),
     db.from('candidates').select('*').then(r => must(r, 'load candidates') as Candidate[]),
-    db.from('candidate_pii').select('candidate_id,name').then(r => must(r, 'load names') as Pick<CandidatePii, 'candidate_id' | 'name'>[]),
+    db.from('candidate_pii').select('candidate_id,name,email').then(r => must(r, 'load names') as Pick<CandidatePii, 'candidate_id' | 'name' | 'email'>[]),
   ])
   const names = new Map(pii.map(p => [p.candidate_id, p.name]))
+  const emails = new Map(pii.map(p => [p.candidate_id, p.email]))
+  const byId = new Map(cands.map(c => [c.id, c]))
+  const dupeGroups = findDuplicateGroups(cands.map(c => ({ id: c.id, cv_text: c.cv_text, name: names.get(c.id) ?? null, email: emails.get(c.id) ?? null })))
+  const dupeIds = new Set(dupeGroups.flatMap(g => g.ids))
+  const dupeViews = dupeGroups.map(g => ({
+    reason: g.reason,
+    members: g.ids
+      .map(id => byId.get(id)!)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map(c => ({
+        id: c.id,
+        name: names.get(c.id) || 'Unknown',
+        role: c.applied_role,
+        score: appliedScore(c),
+        createdAt: c.created_at,
+        sent: c.email_status !== 'draft',
+        filename: c.filename,
+      })),
+  }))
   const ready = cands.filter(c => c.status === 'ready')
   const attention = cands.filter(c => c.status !== 'ready')
   const toSend = ready.filter(c => c.email_status === 'draft' && c.email_body).length
@@ -39,6 +60,8 @@ export default async function Dashboard() {
     <div className="space-y-8">
 
       <SettingsBar threshold={settings.threshold} topN={settings.topN} />
+
+      {dupeViews.length > 0 && <DuplicatesPanel groups={dupeViews} />}
 
       {ready.length > 0 && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -93,6 +116,11 @@ export default async function Dashboard() {
                             <Link href={`/candidates/${c.id}`} className="font-medium text-terradk hover:underline">
                               {name}
                             </Link>
+                            {dupeIds.has(c.id) && (
+                              <span className="badge ml-2 bg-red-100 text-red-700" title="Another entry looks like the same CV. See Possible duplicates above.">
+                                duplicate?
+                              </span>
+                            )}
                             {c.role_auto && (
                               <span className="badge ml-2 bg-terra/10 text-terradk" title={c.role_note ?? 'Role picked by the system'}>
                                 role auto-picked
