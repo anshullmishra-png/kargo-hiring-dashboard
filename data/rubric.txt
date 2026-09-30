@@ -1,0 +1,82 @@
+KARGO PM HIRING RUBRIC
+Derived from patterns in the 8 past hire profiles (CV text + performance ratings).
+Note: the source files contained CVs only, with no interview notes or outcome notes. Patterns are directional (5 Exceeds vs 3 lower-rated).
+
+
+=====================================================
+PATTERNS FOUND (Exceeds vs Meets/Below)
+=====================================================
+
+Pattern 1: They built something nobody assigned, and the people doing the work adopted it quickly, with numbers attached.
+- Rohan: Excel tracker spread across a 12-person team in two weeks; Bill of Lading tool used by 30 colleagues in a month.
+- Sunita: redesigned team intake workflow over a weekend, kept permanently; SOPs adopted in full within 60 days.
+- Lavanya: visibility dashboard adopted by 2 other regional teams; same-day triage process that hadn't existed before.
+- Meghna: onboarding checklist and 30-60-90 framework became the CS team standard.
+- Aditya: case study programme became primary sales collateral.
+Lower-rated CVs show this only weakly (vague adoption, or stays within own function).
+
+Pattern 2: They put the bad news on the record.
+- Lavanya: internal and customer-facing outage post-mortem, follow-ups closed.
+- Aditya: documented root cause of a lost 4-month account; became standard pre-qualification practice.
+- Meghna: wrote bug report for undocumented limitation, managed customer communication through 6-week fix.
+- Sunita: found four documentation gaps before an inspection.
+- Rohan: identified vendor reliability problems and led migration away.
+Vikram's, Rahul's and Preetham's CVs contain wins only.
+
+Pattern 3: They acted on an early, small signal instead of waiting for the lagging number, and they state the lead time.
+- Meghna: flagged at-risk accounts 30-45 days before renewal.
+- Lavanya: redirected a sprint within 30 days on early usage data.
+- Sunita: audited before the inspection.
+- Rohan: noticed a repetitive manual check and prototyped a fix that weekend.
+Lower-rated CVs mostly report after-the-fact aggregates.
+
+
+=====================================================
+RUBRIC: PRODUCT MANAGER (weights total 100%)
+=====================================================
+
+Criterion name: Unasked Fix
+What a strong candidate looks like: The CV names a specific problem that was nobody's assigned job, such as a process, tool, checklist or workflow gap, and says the candidate built the fix themselves. It says why they noticed it, for example because they were doing or watching the work. Score high if all three are present: a named problem, "no one asked," and something concrete that was built. Score low if the CV only lists features shipped from a roadmap.
+Weight: 30%
+
+Criterion name: Proof of Uptake
+What a strong candidate looks like: For that fix, the CV states how many people used it, in what time, and whether it lasted, for example "30 colleagues in the first month" or "still in use / became team standard." Use was voluntary. Score high for a number plus a timeframe plus evidence of durability. Score low for adoption claims with no count or timeframe ("well received," "improved alignment").
+Weight: 30%
+
+Criterion name: Owned Miss
+What a strong candidate looks like: The CV describes at least one thing that went wrong, whether their own decision, a lost deal, a failed launch or an outage. It states the root cause and points to something durable that came out of it, such as a written post-mortem, a changed standard, or follow-ups completed. Score high if a cause and a lasting change are both named. A CV with only successes scores zero here.
+Weight: 20%
+
+Criterion name: Early Call
+What a strong candidate looks like: The CV shows the candidate acting on a small or early signal before it became a crisis, and states the lead time or trigger, such as "flagged 30-45 days before renewal" or "redirected after 30 days of usage data." Score high for a named signal, a stated lead time and an action taken. Score low if results appear only as after-the-fact aggregates.
+Weight: 20%
+
+
+=====================================================
+RUBRIC: SENIOR PRODUCT MANAGER (weights total 100%)
+=====================================================
+
+Criterion name: Unasked Fix
+What a strong candidate looks like: As above, but the fix reached beyond the candidate's own team, into other teams, functions or clients. Nobody sponsored or approved it beforehand. It changed a standard, process or system that others now depend on. Score high only if the CV shows a cross-team reach and a change that outlasted the original problem. A fix used only by the candidate's own immediate team caps at a mid score.
+Weight: 25%
+
+Criterion name: Proof of Uptake
+What a strong candidate looks like: Adoption is quantified and voluntary, and it spread beyond the people the candidate directly managed or sat beside. For example, other regional teams adopted it on their own, or it became the default method. Score high for a count, a timeframe and evidence of spread. Uptake within the candidate's own team caps at a mid score.
+Weight: 20%
+
+Criterion name: Owned Miss
+What a strong candidate looks like: The miss traces to a decision the candidate made or owned, not a vendor's or a colleague's error. The CV names the root cause, shows the candidate wrote it up for others, and shows that the write-up changed how the team or company works afterward (a new pre-qualification step, a new review practice). Score high only when the cause, the record and the changed practice are all visible. An honest post-mortem with no change afterward caps at mid.
+Weight: 25%
+
+Criterion name: Early Call
+What a strong candidate looks like: The candidate acted on an early signal that contradicted what stakeholders or customers were asking for, and accepted a cost to do it, such as redirecting planned work or losing a near-term commitment. The CV states the signal, the lead time, what was given up, and what happened next. Score high for all four. Early action that cost nothing and met no resistance caps at mid.
+Weight: 30%
+
+
+=====================================================
+SCORING NOTES
+=====================================================
+
+- "Uptake" and "Owned Miss" are the discriminators. Every CV claims initiative and results. Very few give a user count with a timeframe, or admit a miss with a root cause.
+- Cap-at-mid rules make the SPM bar higher. They test how far the candidate's work travelled and what it cost them, rather than asking for more years or a bigger title.
+- CVs are written differently. A strong candidate may leave out a miss because they were coached to. If a CV is silent on Owned Miss, ask about it in the interview before scoring it zero.

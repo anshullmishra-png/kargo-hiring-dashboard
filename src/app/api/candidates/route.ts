@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
+import { getDb, must } from '@/lib/db'
+import { extractCvText } from '@/lib/extract'
+import { assertClean, separatePii } from '@/lib/pii'
+import { processCandidate } from '@/lib/pipeline'
+
+export const maxDuration = 60
+
+// Upload one CV: read it → split personal details from the rest → store both apart → run score + email draft.
+export async function POST(req: NextRequest) {
+  try {
+    const form = await req.formData()
+    const file = form.get('file')
+    const role = form.get('role')
+    if (!(file instanceof File)) return NextResponse.json({ error: 'No file' }, { status: 400 })
+    if (role !== 'PM' && role !== 'SPM') return NextResponse.json({ error: 'Pick a role' }, { status: 400 })
+    if (file.size > 8 * 1024 * 1024) return NextResponse.json({ error: 'File over 8 MB' }, { status: 400 })
+
+    const buf = Buffer.from(await file.arrayBuffer())
+    const text = await extractCvText(buf, file.name)
+
+    // Step 0 — separate personal details. Fails closed: if anything personal survives, nothing is stored or sent to AI.
+    const { pii, redacted } = separatePii(text, file.name)
+    assertClean(redacted, pii)
+
+    const db = getDb()
+    const id = randomUUID()
+    const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, '_')
+    const cvPath = `${id}/${safeName}`
+    const up = await db.storage.from('cvs').upload(cvPath, buf, { contentType: file.type || 'application/octet-stream' })
+
+    must(
+      await db.from('candidates').insert({
+        id,
+        applied_role: role,
+        filename: file.name,
+        cv_path: up.error ? null : cvPath,
+        cv_text: redacted,
+        status: 'processing',
+      }),
+      'store candidate',
+    )
+    must(await db.from('candidate_pii').insert({ candidate_id: id, ...pii }), 'store personal details')
+
+    try {
+      await processCandidate(id)
+      return NextResponse.json({ id, name: pii.name, status: 'ready' })
+    } catch (e) {
+      return NextResponse.json({ id, name: pii.name, status: 'error', error: (e as Error).message })
+    }
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 422 })
+  }
+}
