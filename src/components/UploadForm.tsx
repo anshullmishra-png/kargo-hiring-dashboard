@@ -5,7 +5,7 @@ import Link from 'next/link'
 type Row = { name: string; state: 'waiting' | 'working' | 'done' | 'error'; msg?: string; id?: string }
 
 export default function UploadForm() {
-  const [role, setRole] = useState<'PM' | 'SPM'>('PM')
+  const [role, setRole] = useState<'PM' | 'SPM' | 'AUTO'>('PM')
   const [rows, setRows] = useState<Row[]>([])
   const [busy, setBusy] = useState(false)
   const [finishing, setFinishing] = useState('')
@@ -46,9 +46,10 @@ export default function UploadForm() {
         <div className="flex flex-wrap items-end gap-4">
           <label className="text-sm">
             <span className="lbl">Role these CVs applied for</span>
-            <select className="input" value={role} onChange={e => setRole(e.target.value as 'PM' | 'SPM')} disabled={busy}>
+            <select className="input" value={role} onChange={e => setRole(e.target.value as 'PM' | 'SPM' | 'AUTO')} disabled={busy}>
               <option value="PM">Product Manager</option>
               <option value="SPM">Senior Product Manager</option>
+              <option value="AUTO">Not sure: let the system pick</option>
             </select>
           </label>
           <label className="text-sm">
@@ -60,7 +61,7 @@ export default function UploadForm() {
           </button>
         </div>
         <p className="text-xs text-inkmut">
-          Name, email and phone are separated first and stored privately. Only the rest of the CV goes to the AI. Each CV takes roughly 10-20 seconds. Upload one role at a time.
+          Name, email and phone are separated first and stored privately. Only the rest of the CV goes to the AI. Each CV takes roughly 10-20 seconds. Upload one role at a time. "Not sure" scores against both rubrics and the two job descriptions, then picks the better fit (you can change it afterwards).
         </p>
       </div>
 

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const file = form.get('file')
     const role = form.get('role')
     if (!(file instanceof File)) return NextResponse.json({ error: 'No file' }, { status: 400 })
-    if (role !== 'PM' && role !== 'SPM') return NextResponse.json({ error: 'Pick a role' }, { status: 400 })
+    if (role !== 'PM' && role !== 'SPM' && role !== 'AUTO') return NextResponse.json({ error: 'Pick a role' }, { status: 400 })
     if (file.size > 8 * 1024 * 1024) return NextResponse.json({ error: 'File over 8 MB' }, { status: 400 })
 
     const buf = Buffer.from(await file.arrayBuffer())
@@ -33,7 +33,9 @@ export async function POST(req: NextRequest) {
     must(
       await db.from('candidates').insert({
         id,
-        applied_role: role,
+        // 'AUTO' = founder isn't sure; starts as PM and the scorer picks the real fit.
+        applied_role: role === 'AUTO' ? 'PM' : role,
+        role_auto: role === 'AUTO',
         filename: file.name,
         cv_path: up.error ? null : cvPath,
         cv_text: redacted,

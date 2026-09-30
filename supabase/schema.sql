@@ -29,6 +29,8 @@ create table if not exists candidates (
   id             uuid primary key default gen_random_uuid(),
   applied_role   text not null references roles(code),
   filename       text,
+  role_auto      boolean not null default false,   -- true when the founder said "not sure" and the AI picked the role
+  role_note      text,                              -- the AI's one-line reason for that pick
   cv_path        text,                          -- original file in private storage bucket 'cvs'
   cv_text        text not null,                 -- REDACTED text; the only CV text the AI ever sees
   status         text not null default 'processing',   -- processing | ready | error
@@ -61,6 +63,10 @@ create table if not exists candidate_scores (
   reason        text not null,
   primary key (candidate_id, criterion_id)
 );
+
+-- For databases created before these columns existed.
+alter table candidates add column if not exists role_auto boolean not null default false;
+alter table candidates add column if not exists role_note text;
 
 alter table roles            enable row level security;
 alter table rubric_criteria  enable row level security;

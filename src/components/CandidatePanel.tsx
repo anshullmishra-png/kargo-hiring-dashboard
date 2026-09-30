@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 interface Props {
   id: string
   status: 'processing' | 'ready' | 'error'
+  role: 'PM' | 'SPM'
   details: { name: string; email: string; phone: string }
   email: {
     kind: 'invite' | 'reject' | null
@@ -26,7 +27,7 @@ async function api(url: string, method: string, body?: object) {
   return j
 }
 
-export default function CandidatePanel({ id, status, details, email, hasBrief, cvUrl }: Props) {
+export default function CandidatePanel({ id, status, role, details, email, hasBrief, cvUrl }: Props) {
   const router = useRouter()
   const [d, setD] = useState(details)
   const [subject, setSubject] = useState(email.subject)
@@ -86,6 +87,15 @@ export default function CandidatePanel({ id, status, details, email, hasBrief, c
     })
   }
 
+  const changeRole = (r: string) => {
+    if (r === role) return
+    if (!confirm(`Move this candidate to ${r === 'PM' ? 'Product Manager' : 'Senior Product Manager'}? Their unsent email is redrafted for that role.`)) return
+    run('role', async () => {
+      await api(`/api/candidates/${id}`, 'PATCH', { applied_role: r })
+      return 'Role changed'
+    })
+  }
+
   const dirty = subject !== email.subject || body !== email.body
 
   return (
@@ -101,6 +111,13 @@ export default function CandidatePanel({ id, status, details, email, hasBrief, c
             </a>
           )}
         </div>
+        <label className="block max-w-xs text-sm">
+          <span className="lbl">Role (which rubric ranks them)</span>
+          <select className="input" value={role} disabled={!!busy || sent} onChange={e => changeRole(e.target.value)}>
+            <option value="PM">Product Manager</option>
+            <option value="SPM">Senior Product Manager</option>
+          </select>
+        </label>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm">
             <span className="lbl">Name</span>

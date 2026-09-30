@@ -79,6 +79,11 @@ export default async function Dashboard() {
                             <Link href={`/candidates/${c.id}`} className="font-medium text-terradk hover:underline">
                               {name}
                             </Link>
+                            {c.role_auto && (
+                              <span className="badge ml-2 bg-terra/10 text-terradk" title={c.role_note ?? 'Role picked by the system'}>
+                                role auto-picked
+                              </span>
+                            )}
                             {c.brief && <p className="mt-1 max-w-3xl text-inkmut">{c.brief.replaceAll('[CANDIDATE]', name)}</p>}
                           </td>
                           <td className="px-3 py-2 font-semibold">

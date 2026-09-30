@@ -46,10 +46,18 @@ export async function scoreCandidate(id: string): Promise<void> {
     'Do not infer or assume evidence that is not written. Vague claims ("well received", "improved alignment") do not count as proof.',
     'The reason must be ONE short sentence (max 25 words) naming the concrete evidence found or what is missing.',
     'Scoring notes from the founder:\n' + settings.scoringNotes,
-    'Respond with JSON only, exactly this shape: {"PM":[{"criterion":"<exact name>","score":<int>,"reason":"<sentence>"}...],"SPM":[...]} with one entry per criterion of each rubric, in rubric order.',
+    'Respond with JSON only, exactly this shape: {"PM":[{"criterion":"<exact name>","score":<int>,"reason":"<sentence>"}...],"SPM":[...]} with one entry per criterion of each rubric, in rubric order.' +
+      (cand.role_auto
+        ? ' The founder does not know which role fits this candidate, so ALSO add "best_fit":{"role":"PM" or "SPM","reason":"<one sentence>"} choosing the better-fitting role using the job descriptions (years of experience asked for, level of ownership, platform/integration depth) and the CV. Do not choose a role just because its score is higher: the SPM rubric is deliberately stricter.'
+        : ''),
   ].join('\n\n')
 
-  const user = `${rubricBlock('PM', rubric.PM)}\n\n${rubricBlock('SPM', rubric.SPM)}\n\n=== CV (personal details removed) ===\n${cand.cv_text}`
+  let jdBlock = ''
+  if (cand.role_auto) {
+    const { data: roles } = await db.from('roles').select('code,title,jd_text')
+    jdBlock = '\n\n' + (roles ?? []).map(r => `### JOB DESCRIPTION: ${r.title} (${r.code})\n${r.jd_text}`).join('\n\n')
+  }
+  const user = `${rubricBlock('PM', rubric.PM)}\n\n${rubricBlock('SPM', rubric.SPM)}${jdBlock}\n\n=== CV (personal details removed) ===\n${cand.cv_text}`
 
   const parsed = await llmJson(system, user, raw => {
     const out: Record<RoleCode, { criterion: string; score: number; reason: string }[]> = { PM: [], SPM: [] }
@@ -68,8 +76,14 @@ export async function scoreCandidate(id: string): Promise<void> {
         })
       }
     }
-    return out
-  })
+    let bestFit: { role: RoleCode; reason: string } | null = null
+    if (cand.role_auto) {
+      const b = (raw as { best_fit?: { role?: string; reason?: string } })?.best_fit
+      if ((b?.role !== 'PM' && b?.role !== 'SPM') || typeof b.reason !== 'string') throw new Error('Model output missing best_fit')
+      bestFit = { role: b.role, reason: b.reason.trim().slice(0, 300) }
+    }
+    return { out, bestFit }
+  }).then(r => ({ ...r.out, bestFit: r.bestFit }))
 
   const rows: ScoreRow[] = []
   for (const code of ['PM', 'SPM'] as RoleCode[]) {
@@ -87,6 +101,7 @@ export async function scoreCandidate(id: string): Promise<void> {
         score_spm: weightedTotal(rubric.SPM, rows),
         status: 'ready',
         error: null,
+        ...(parsed.bestFit ? { applied_role: parsed.bestFit.role, role_note: parsed.bestFit.reason } : {}),
       })
       .eq('id', id),
     'save totals',

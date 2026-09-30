@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, must } from '@/lib/db'
 import { firstNameOf } from '@/lib/pii'
-import { getCandidate, getPii } from '@/lib/pipeline'
+import { draftEmail, getCandidate, getPii, reconcile } from '@/lib/pipeline'
+
+export const maxDuration = 60
 
 // Edit personal details and/or the email draft.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -10,6 +12,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const db = getDb()
     const cand = await getCandidate(params.id)
     const sent = cand.email_status !== 'draft'
+
+    if (b.applied_role === 'PM' || b.applied_role === 'SPM') {
+      if (sent) return NextResponse.json({ error: 'Already emailed, so the role is locked' }, { status: 409 })
+      must(
+        await db.from('candidates').update({ applied_role: b.applied_role, role_auto: false, role_note: null, brief: null }).eq('id', params.id),
+        'change role',
+      )
+      await draftEmail(params.id) // the draft names the role, so rewrite it
+      await reconcile() // ranking changed, so refresh briefs for the new top N
+      return NextResponse.json({ ok: true })
+    }
 
     const piiPatch: Record<string, string | null> = {}
     for (const k of ['name', 'email', 'phone'] as const) {

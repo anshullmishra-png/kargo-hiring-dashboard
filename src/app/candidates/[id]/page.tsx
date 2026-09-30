@@ -72,7 +72,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
 
   return (
     <Shell
-      eyebrow={`Applied: ${roleTitle(cand.applied_role)}`}
+      eyebrow={cand.role_auto ? `Best fit (auto-picked): ${roleTitle(cand.applied_role)}` : `Applied: ${roleTitle(cand.applied_role)}`}
       title={name}
       pill={
         <Link href="/" className="hover:text-terradk">
@@ -106,9 +106,10 @@ export default async function CandidatePage({ params }: { params: { id: string }
           )}
 
           <CandidatePanel
-            key={`${cand.status}|${cand.email_status}|${cand.email_subject}|${cand.email_body}|${pii.name}|${pii.email}|${pii.phone}`}
+            key={`${cand.applied_role}|${cand.status}|${cand.email_status}|${cand.email_subject}|${cand.email_body}|${pii.name}|${pii.email}|${pii.phone}`}
             id={cand.id}
             status={cand.status}
+            role={cand.applied_role}
             details={{ name: pii.name ?? '', email: pii.email ?? '', phone: pii.phone ?? '' }}
             email={{
               kind: cand.email_kind,
@@ -156,6 +157,9 @@ export default async function CandidatePage({ params }: { params: { id: string }
                   <span>The line</span>
                   <span className="text-sand/90">{settings.threshold}</span>
                 </div>
+                {cand.role_auto && cand.role_note && (
+                  <p className="border-t border-white/10 pt-2 text-[13px] text-sand/70">Why {cand.applied_role}: {cand.role_note}</p>
+                )}
                 <p className={`pt-1 text-[13px] font-semibold ${aboveLine ? 'text-[#9ad4a3]' : 'text-[#e8b48f]'}`}>
                   {aboveLine ? 'Above the line: interview invite' : 'Below the line: rejection'}
                 </p>

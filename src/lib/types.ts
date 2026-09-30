@@ -19,6 +19,8 @@ export interface Candidate {
   id: string
   applied_role: RoleCode
   filename: string | null
+  role_auto: boolean
+  role_note: string | null
   cv_path: string | null
   cv_text: string
   status: 'processing' | 'ready' | 'error'
