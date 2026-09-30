@@ -17,11 +17,15 @@ export interface DupeInput {
 }
 
 export interface DupeGroup {
-  reason: 'identical' | 'same-person'
+  // identical: same CV text and same name. same-text: same CV text under DIFFERENT names (copied CV or reused template).
+  // same-person: same name + email but the CV text differs (updated CV).
+  reason: 'identical' | 'same-text' | 'same-person'
   ids: string[]
 }
 
 const clean = (s: string | null) => (s ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+export const cleanName = (s: string | null) => (s ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 export function findDuplicateGroups(rows: DupeInput[]): DupeGroup[] {
   const parent = new Map(rows.map(r => [r.id, r.id]))
@@ -37,6 +41,7 @@ export function findDuplicateGroups(rows: DupeInput[]): DupeGroup[] {
   const byHash = new Map<string, string>()
   const byPerson = new Map<string, string>()
   const identicalPairs = new Set<string>()
+  const nameOf = new Map(rows.map(r => [r.id, r.name]))
 
   for (const r of rows) {
     const h = normHash(r.cv_text)
@@ -64,5 +69,10 @@ export function findDuplicateGroups(rows: DupeInput[]): DupeGroup[] {
   }
   return [...groups.values()]
     .filter(ids => ids.length > 1)
-    .map(ids => ({ ids, reason: ids.some(i => identicalPairs.has(i)) ? ('identical' as const) : ('same-person' as const) }))
+    .map(ids => {
+      const hasSameText = ids.some(i => identicalPairs.has(i))
+      const names = new Set(ids.map(i => cleanName(nameOf.get(i) ?? null)))
+      const reason: DupeGroup['reason'] = !hasSameText ? 'same-person' : names.size > 1 ? 'same-text' : 'identical'
+      return { ids, reason }
+    })
 }

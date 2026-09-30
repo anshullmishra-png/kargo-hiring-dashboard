@@ -15,7 +15,7 @@ export interface DupeMember {
 }
 
 export interface DupeGroupView {
-  reason: 'identical' | 'same-person'
+  reason: 'identical' | 'same-text' | 'same-person'
   members: DupeMember[]
 }
 
@@ -51,7 +51,11 @@ export default function DuplicatesPanel({ groups }: { groups: DupeGroupView[] })
         {groups.map((g, gi) => (
           <div key={gi} className="rounded-xl border border-sanddk bg-sandlt p-4">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-terradk">
-              {g.reason === 'identical' ? 'Identical CV' : 'Same name and email, different CV text'}
+              {g.reason === 'identical'
+                ? 'Identical CV'
+                : g.reason === 'same-text'
+                  ? 'Same CV text under different names: copied CV, or two people you want to keep?'
+                  : 'Same name and email, different CV text'}
             </p>
             <ul className="divide-y divide-line/60">
               {g.members.map(m => (

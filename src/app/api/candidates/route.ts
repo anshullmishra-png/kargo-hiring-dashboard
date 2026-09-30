@@ -4,7 +4,7 @@ import { getDb, must } from '@/lib/db'
 import { extractCvText } from '@/lib/extract'
 import { assertClean, separatePii } from '@/lib/pii'
 import { processCandidate } from '@/lib/pipeline'
-import { normHash } from '@/lib/dupes'
+import { cleanName, normHash } from '@/lib/dupes'
 
 export const maxDuration = 60
 
@@ -27,10 +27,18 @@ export async function POST(req: NextRequest) {
 
     const db = getDb()
 
-    // Exact repeat of a CV already in the system? Skip it: no second scoring run, and point to the existing record.
+    // Exact repeat of a CV already in the system (same text AND same name)? Skip it: no second scoring run, and
+    // point to the existing record. Same text under a different name is kept and flagged instead: it is a
+    // different candidate, and a copied CV is something the founder should see.
     const hash = normHash(redacted)
     const existing = must(await db.from('candidates').select('id,cv_text'), 'check duplicates') as { id: string; cv_text: string }[]
-    const dupe = existing.find(e => normHash(e.cv_text) === hash)
+    const sameText = existing.filter(e => normHash(e.cv_text) === hash)
+    let dupe: { id: string } | undefined
+    if (sameText.length) {
+      const { data: names } = await db.from('candidate_pii').select('candidate_id,name').in('candidate_id', sameText.map(e => e.id))
+      const mine = cleanName(pii.name)
+      dupe = (names ?? []).map(n => ({ id: n.candidate_id as string, name: cleanName(n.name as string | null) })).find(n => n.name === mine)
+    }
     if (dupe) return NextResponse.json({ id: dupe.id, name: pii.name, status: 'duplicate' })
 
     const id = randomUUID()
