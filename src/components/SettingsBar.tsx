@@ -26,11 +26,11 @@ export default function SettingsBar({ threshold, topN }: { threshold: number; to
   return (
     <div className="card flex flex-wrap items-end gap-4 text-sm">
       <label>
-        <span className="mb-1 block text-gray-600">The line (min score for an invite)</span>
+        <span className="lbl">The line (min score for an invite)</span>
         <input className="input w-24" type="number" min={0} max={100} value={t} onChange={e => setT(e.target.value)} />
       </label>
       <label>
-        <span className="mb-1 block text-gray-600">Briefs for top N per role</span>
+        <span className="lbl">Briefs for top N per role</span>
         <input className="input w-24" type="number" min={0} max={50} value={n} onChange={e => setN(e.target.value)} />
       </label>
       <button
@@ -43,7 +43,7 @@ export default function SettingsBar({ threshold, topN }: { threshold: number; to
       <button className="btn" disabled={busy} onClick={() => call('/api/reconcile')} title="Fill in any missing briefs or drafts">
         Refresh briefs &amp; drafts
       </button>
-      <span className="text-gray-500">{msg}</span>
+      <span className="text-inkmut">{msg}</span>
     </div>
   )
 }

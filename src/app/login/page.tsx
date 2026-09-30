@@ -17,11 +17,12 @@ export default function Login() {
   }
 
   return (
-    <form onSubmit={submit} className="card mx-auto mt-24 max-w-xs space-y-3">
-      <h1 className="font-semibold">Kargo Hiring</h1>
+    <form onSubmit={submit} className="card mx-auto mt-28 max-w-sm space-y-4 !p-8 shadow-card">
+      <p className="eyebrow">Kargo · Hiring</p>
+      <h1 className="text-3xl font-extrabold leading-tight tracking-tight">Welcome back.</h1>
       <input className="input" type="password" autoFocus placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} />
       {err && <p className="text-sm text-red-600">{err}</p>}
-      <button className="btn btn-primary w-full">Enter</button>
+      <button className="btn btn-primary w-full !py-3">Enter</button>
     </form>
   )
 }

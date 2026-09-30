@@ -3,7 +3,7 @@
 export default function LogoutButton() {
   return (
     <button
-      className="text-gray-500 hover:text-black"
+      className="font-medium text-inkmut hover:text-ink"
       onClick={async () => {
         await fetch('/api/logout', { method: 'POST' })
         window.location.href = '/login'

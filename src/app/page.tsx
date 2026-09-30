@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getDb, must } from '@/lib/db'
 import { loadSettings } from '@/lib/rubric'
 import SettingsBar from '@/components/SettingsBar'
+import Shell from '@/components/Shell'
 import { appliedScore, roleTitle } from '@/lib/types'
 import type { Candidate, CandidatePii, RoleCode } from '@/lib/types'
 
@@ -23,19 +24,23 @@ export default async function Dashboard() {
   const sent = ready.filter(c => c.email_status === 'sent').length
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-lg font-semibold">Candidates</h1>
-        <p className="text-sm text-gray-600">
-          {ready.length} scored · {toSend} emails waiting for you · {sent} sent
-        </p>
-      </div>
+    <Shell
+      eyebrow="Kargo · Hiring"
+      title="Candidates, ranked."
+      sub="Scored against the rubric, briefed, and drafted. Nothing goes out until you press send."
+      pill={
+        <>
+          <span className="text-terra">●</span> {ready.length} scored · {toSend} emails waiting · {sent} sent
+        </>
+      }
+    >
+    <div className="space-y-8">
 
       <SettingsBar threshold={settings.threshold} topN={settings.topN} />
 
       {cands.length === 0 && (
-        <div className="card text-sm text-gray-600">
-          No candidates yet. <Link className="text-blue-700 underline" href="/upload">Upload CVs</Link> to get started.
+        <div className="card text-sm text-inkmut">
+          No candidates yet. <Link className="text-terradk underline" href="/upload">Upload CVs</Link> to get started.
         </div>
       )}
 
@@ -47,12 +52,12 @@ export default async function Dashboard() {
         const firstBelow = list.findIndex(c => (appliedScore(c) ?? 0) < settings.threshold)
         return (
           <section key={role}>
-            <h2 className="mb-2 font-medium">
-              {roleTitle(role)} <span className="text-sm font-normal text-gray-500">· ranked on the {role} rubric</span>
+            <h2 className="mb-3 text-lg font-bold tracking-tight">
+              {roleTitle(role)} <span className="text-sm font-normal text-inkmut">· ranked on the {role} rubric</span>
             </h2>
-            <div className="card overflow-x-auto p-0">
+            <div className="card overflow-x-auto !p-0">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500">
+                <thead className="border-b border-line bg-sanddk/40 text-xs uppercase tracking-wider text-inkmut">
                   <tr>
                     <th className="w-10 px-3 py-2">#</th>
                     <th className="px-3 py-2">Candidate</th>
@@ -68,18 +73,18 @@ export default async function Dashboard() {
                     const name = names.get(c.id) || 'Unknown'
                     return (
                       <RowGroup key={c.id} showLine={i === firstBelow} threshold={settings.threshold}>
-                        <tr className="border-t border-gray-100 align-top hover:bg-gray-50">
-                          <td className="px-3 py-2 text-gray-500">{i + 1}</td>
+                        <tr className="border-t border-line/60 align-top hover:bg-sand/50">
+                          <td className="px-3 py-2 text-inkmut">{i + 1}</td>
                           <td className="px-3 py-2">
-                            <Link href={`/candidates/${c.id}`} className="font-medium text-blue-800 hover:underline">
+                            <Link href={`/candidates/${c.id}`} className="font-medium text-terradk hover:underline">
                               {name}
                             </Link>
-                            {c.brief && <p className="mt-1 max-w-3xl text-gray-600">{c.brief.replaceAll('[CANDIDATE]', name)}</p>}
+                            {c.brief && <p className="mt-1 max-w-3xl text-inkmut">{c.brief.replaceAll('[CANDIDATE]', name)}</p>}
                           </td>
                           <td className="px-3 py-2 font-semibold">
-                            <span className={s >= settings.threshold ? 'text-green-700' : 'text-gray-500'}>{s}</span>
+                            <span className={s >= settings.threshold ? 'text-green-700' : 'text-inkmut'}>{s}</span>
                           </td>
-                          <td className="px-3 py-2 text-gray-500">{otherScore(c) ?? '—'}</td>
+                          <td className="px-3 py-2 text-inkmut">{otherScore(c) ?? '—'}</td>
                           <td className="px-3 py-2">
                             <EmailBadge c={c} />
                           </td>
@@ -101,14 +106,14 @@ export default async function Dashboard() {
 
       {attention.length > 0 && (
         <section>
-          <h2 className="mb-2 font-medium">Needs attention</h2>
-          <ul className="card divide-y divide-gray-100 p-0 text-sm">
+          <h2 className="mb-3 text-lg font-bold tracking-tight">Needs attention</h2>
+          <ul className="card divide-y divide-line/60 !p-0 text-sm">
             {attention.map(c => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
-                <Link href={`/candidates/${c.id}`} className="font-medium text-blue-800 hover:underline">
+                <Link href={`/candidates/${c.id}`} className="font-medium text-terradk hover:underline">
                   {names.get(c.id) || c.filename || 'Unknown'}
                 </Link>
-                <span className="text-gray-500">{roleTitle(c.applied_role)}</span>
+                <span className="text-inkmut">{roleTitle(c.applied_role)}</span>
                 <span className="text-red-600">{c.status === 'processing' ? 'Not finished (open to retry)' : c.error}</span>
               </li>
             ))}
@@ -116,6 +121,7 @@ export default async function Dashboard() {
         </section>
       )}
     </div>
+    </Shell>
   )
 }
 
@@ -123,8 +129,8 @@ function RowGroup({ showLine, threshold, children }: { showLine: boolean; thresh
   return (
     <>
       {showLine && (
-        <tr className="bg-amber-50">
-          <td colSpan={6} className="px-3 py-1 text-center text-xs font-medium text-amber-800">
+        <tr className="bg-terra/10">
+          <td colSpan={6} className="px-3 py-1 text-center text-xs font-medium text-terradk">
             — the line ({threshold}): below this get a rejection draft —
           </td>
         </tr>
@@ -135,7 +141,7 @@ function RowGroup({ showLine, threshold, children }: { showLine: boolean; thresh
 }
 
 function EmailBadge({ c }: { c: Candidate }) {
-  if (c.email_status === 'sent') return <span className="badge bg-gray-200 text-gray-700">{c.email_kind === 'invite' ? 'Invite' : 'Rejection'} sent</span>
+  if (c.email_status === 'sent') return <span className="badge bg-sanddk text-ink/80">{c.email_kind === 'invite' ? 'Invite' : 'Rejection'} sent</span>
   if (!c.email_body) return <span className="badge bg-red-100 text-red-700">No draft</span>
   return c.email_kind === 'invite' ? (
     <span className="badge bg-green-100 text-green-800">Invite draft</span>

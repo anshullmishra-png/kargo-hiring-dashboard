@@ -89,27 +89,29 @@ export default function CandidatePanel({ id, status, details, email, hasBrief, c
   const dirty = subject !== email.subject || body !== email.body
 
   return (
-    <div className="space-y-5">
-      <section className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-gray-500">Personal details (stored privately, never sent to AI)</h2>
+    <div className="space-y-6">
+      <section className="card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-3 text-lg font-bold tracking-tight">
+            <span className="step">1</span>Personal details <span className="text-sm font-normal text-inkmut">private, never sent to AI</span>
+          </h2>
           {cvUrl && (
-            <a className="text-sm text-blue-700 hover:underline" href={cvUrl} target="_blank" rel="noreferrer">
+            <a className="text-sm text-terradk hover:underline" href={cvUrl} target="_blank" rel="noreferrer">
               View original CV
             </a>
           )}
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">Name</span>
+            <span className="lbl">Name</span>
             <input className="input" value={d.name} onChange={e => setD({ ...d, name: e.target.value })} />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">Email</span>
+            <span className="lbl">Email</span>
             <input className="input" value={d.email} onChange={e => setD({ ...d, email: e.target.value })} />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">Phone</span>
+            <span className="lbl">Phone</span>
             <input className="input" value={d.phone} onChange={e => setD({ ...d, phone: e.target.value })} />
           </label>
         </div>
@@ -118,24 +120,25 @@ export default function CandidatePanel({ id, status, details, email, hasBrief, c
         </button>
       </section>
 
-      <section className="card space-y-3">
+      <section className="card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-gray-500">
-            Draft email {email.kind && <span className="ml-1 normal-case">· {email.kind === 'invite' ? 'interview invite' : 'rejection'}</span>}
+          <h2 className="flex items-center gap-3 text-lg font-bold tracking-tight">
+            <span className="step">2</span>Draft email{' '}
+            {email.kind && <span className="text-sm font-normal text-inkmut">· {email.kind === 'invite' ? 'interview invite' : 'rejection'}</span>}
           </h2>
           {sent && (
-            <span className="badge bg-gray-200 text-gray-700">
+            <span className="badge bg-sanddk text-ink/80">
               Sent {email.sentAt ? new Date(email.sentAt).toLocaleString() : ''} to {email.sentTo}
             </span>
           )}
         </div>
 
-        {status !== 'ready' && !email.body && <p className="text-sm text-gray-600">No draft yet. Retry scoring below.</p>}
+        {status !== 'ready' && !email.body && <p className="text-sm text-inkmut">No draft yet. Retry scoring below.</p>}
 
         {(email.body || sent) && (
           <>
             <label className="block text-sm">
-              <span className="mb-1 block text-gray-600">To: {d.email || 'no email address'}</span>
+              <span className="lbl">To: {d.email || 'no email address'}</span>
               <input className="input" value={subject} disabled={locked} onChange={e => setSubject(e.target.value)} />
             </label>
             <textarea
@@ -147,7 +150,7 @@ export default function CandidatePanel({ id, status, details, email, hasBrief, c
             {email.error && <p className="text-sm text-red-600">Last send failed: {email.error}</p>}
             {!locked && (
               <div className="flex flex-wrap items-center gap-2">
-                <button className="btn btn-primary" onClick={send} disabled={!!busy}>
+                <button className="btn btn-primary !px-5 !py-3 !text-[15px]" onClick={send} disabled={!!busy}>
                   {busy === 'send' ? 'Sending...' : 'Send via Resend'}
                 </button>
                 <button className="btn" onClick={saveDraft} disabled={!!busy || !dirty}>

@@ -45,34 +45,34 @@ export default function UploadForm() {
       <div className="card space-y-3">
         <div className="flex flex-wrap items-end gap-4">
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">Role these CVs applied for</span>
+            <span className="lbl">Role these CVs applied for</span>
             <select className="input" value={role} onChange={e => setRole(e.target.value as 'PM' | 'SPM')} disabled={busy}>
               <option value="PM">Product Manager</option>
               <option value="SPM">Senior Product Manager</option>
             </select>
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">CV files (PDF, DOCX or TXT; several at once is fine)</span>
+            <span className="lbl">CV files (PDF, DOCX or TXT; several at once is fine)</span>
             <input ref={input} type="file" multiple accept=".pdf,.docx,.txt" disabled={busy} className="text-sm" />
           </label>
           <button className="btn btn-primary" onClick={run} disabled={busy}>
             {busy ? 'Working...' : 'Upload and score'}
           </button>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-inkmut">
           Name, email and phone are separated first and stored privately. Only the rest of the CV goes to the AI. Each CV takes roughly 10-20 seconds. Upload one role at a time.
         </p>
       </div>
 
       {rows.length > 0 && (
-        <ul className="card divide-y divide-gray-100 p-0 text-sm">
+        <ul className="card divide-y divide-line/60 p-0 text-sm">
           {rows.map((r, i) => (
             <li key={i} className="flex items-center gap-3 px-4 py-2">
               <span className="w-5">{r.state === 'done' ? '✓' : r.state === 'error' ? '✗' : r.state === 'working' ? '…' : '·'}</span>
               <span className="flex-1 truncate">{r.name}</span>
-              <span className={r.state === 'error' ? 'text-red-600' : 'text-gray-500'}>{r.msg}</span>
+              <span className={r.state === 'error' ? 'text-red-600' : 'text-inkmut'}>{r.msg}</span>
               {r.id && (
-                <Link className="text-blue-700 hover:underline" href={`/candidates/${r.id}`}>
+                <Link className="text-terradk hover:underline" href={`/candidates/${r.id}`}>
                   open
                 </Link>
               )}
@@ -80,7 +80,7 @@ export default function UploadForm() {
           ))}
         </ul>
       )}
-      {finishing && <p className="text-sm text-gray-600">{finishing}</p>}
+      {finishing && <p className="text-sm text-inkmut">{finishing}</p>}
       {!busy && rows.length > 0 && !finishing && (
         <Link className="btn btn-primary" href="/">
           Go to dashboard
