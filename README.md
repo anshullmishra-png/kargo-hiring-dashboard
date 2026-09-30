@@ -8,7 +8,7 @@ Internal tool for one person. Upload a CV, pick the role → it is scored agains
 2. **Personal details are split off first, in plain code (no AI).** Name, email, phone and profile links go to the private `candidate_pii` table. The rest of the CV (`candidates.cv_text`) is what the AI sees. If anything personal survives redaction, the upload is rejected and nothing is sent to AI.
 3. **Score** — every CV is scored 0–10 per criterion against **both** the PM and SPM rubric (one-line reason each). Weighted to 0–100 using the weights in the database.
 4. **Email draft** — an interview invite for the **top N per role** (default 5, ranked on the applied-role score, and at least the minimum score), a warm rejection for everyone else. Written from the redacted CV with `{{FIRST_NAME}}` placeholders; the real name is substituted in code afterwards.
-5. **Brief** — three sentences for the top N per role (default 5) that are above the line.
+5. **Brief** — three sentences (strongest evidence, biggest gap, one question to ask) for the same top N per role.
 6. **Dashboard** (`/`) ranks each role by score, shows briefs, and links to each candidate → edit the draft → **Send via Resend**.
 
 N and the minimum score are editable on the dashboard; as new CVs arrive or N changes, unsent drafts flip between invite and rejection automatically. Sent emails are never touched.
