@@ -28,7 +28,7 @@ Rubric and JDs live in `data/`. After editing `data/rubric.txt`, run `npm run db
 
 ## Testing safely
 
-Emails go to the address stored for each candidate, but only if its domain is in `ALLOWED_RECIPIENT_DOMAINS` (default `pg27.mesaschool.co`, the MESA test addresses); anything else is blocked before Resend is called. Optionally set `TEST_RECIPIENT` to redirect every email to one address (it must also be on an allowed domain). With Resend's default `onboarding@resend.dev` sender you can only deliver to your own Resend account email; verify a domain to send to other addresses.
+Emails go to the address stored for each candidate, but only if its domain (or the exact address) is in `ALLOWED_RECIPIENT_DOMAINS` (default `pg27.mesaschool.co`, the MESA test addresses); anything else is blocked before Resend is called. Optionally set `TEST_RECIPIENT` to redirect every email to one address (it must also be on an allowed domain). With Resend's default `onboarding@resend.dev` sender you can only deliver to your own Resend account email; verify a domain to send to other addresses.
 
 `npm run test:pii -- "<folder of CVs>"` runs the personal-details separation over a folder and reports what it found.
 

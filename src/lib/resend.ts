@@ -14,16 +14,17 @@ export async function sendViaResend(opts: {
   if (!key) throw new Error('RESEND_API_KEY is not set')
   const test = process.env.TEST_RECIPIENT?.trim()
 
-  // Safety: this is a case-study system, so only allow sending to approved test domains (default: the MESA test addresses).
-  // Nothing can reach a real external address unless the allowlist is deliberately changed.
+  // Safety: this is a case-study system, so only allow sending to approved test recipients (default: the MESA test addresses).
+  // An entry is either a whole domain ("pg27.mesaschool.co") or one exact address ("someone@gmail.com").
+  // Nothing can reach anyone else unless the allowlist is deliberately changed.
   const allowed = (process.env.ALLOWED_RECIPIENT_DOMAINS ?? 'pg27.mesaschool.co')
     .split(',')
     .map(d => d.trim().toLowerCase())
     .filter(Boolean)
   const target = (test || opts.to).toLowerCase()
   const domain = target.split('@')[1] ?? ''
-  if (allowed.length && !allowed.includes(domain)) {
-    throw new Error(`Blocked: ${target} is not on an approved test domain (${allowed.join(', ')}). Nothing was sent.`)
+  if (allowed.length && !allowed.includes(domain) && !allowed.includes(target)) {
+    throw new Error(`Blocked: ${target} is not on the approved recipient list (${allowed.join(', ')}). Nothing was sent.`)
   }
   const to = test || opts.to
   const subject = test ? `[TEST for ${opts.to}] ${opts.subject}` : opts.subject
