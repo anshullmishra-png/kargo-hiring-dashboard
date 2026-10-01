@@ -16,7 +16,6 @@ N and the minimum score are editable on the dashboard; as new CVs arrive or N ch
 ## Setup
 
 ```bash
-cd hiring-dashboard
 npm install
 cp .env.local.example .env.local     # fill in the keys
 npm run db:setup                     # creates tables + loads rubric and JDs (needs DATABASE_URL)
@@ -35,7 +34,7 @@ Emails go to the address stored for each candidate, but only if its domain is in
 
 ## Deploy (Vercel)
 
-Import the repo, set **Root Directory** to `hiring-dashboard`, add the env vars from `.env.local.example` (not `DATABASE_URL`), and set `DASHBOARD_PASSWORD` — the app refuses to serve in production without it. Long steps use `maxDuration = 60`.
+Import the repo into Vercel (the app is at the repo root, so the default Root Directory works), add the env vars from `.env.local.example` (not `DATABASE_URL`), and set `DASHBOARD_PASSWORD` — the app refuses to serve in production without it. Long steps use `maxDuration = 60`.
 
 ## Privacy notes
 
